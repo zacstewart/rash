@@ -1,0 +1,20 @@
+[root]
+name = "rash"
+version = "0.0.1"
+dependencies = [
+ "rustbox 0.1.0 (git+https://github.com/gchp/rustbox.git)",
+]
+
+[[package]]
+name = "rustbox"
+version = "0.1.0"
+source = "git+https://github.com/gchp/rustbox.git#9f6ca3c60c9294c8eafcb7198355bc4c98ae7286"
+dependencies = [
+ "termbox-sys 0.0.1 (git+https://github.com/gchp/rustbox.git)",
+]
+
+[[package]]
+name = "termbox-sys"
+version = "0.0.1"
+source = "git+https://github.com/gchp/rustbox.git#9f6ca3c60c9294c8eafcb7198355bc4c98ae7286"
+

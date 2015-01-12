@@ -1,3 +1,4 @@
+#![feature(box_syntax)]
 use std::io::{stdio};
 use std::io::stdio::{StdinReader, StdWriter};
 

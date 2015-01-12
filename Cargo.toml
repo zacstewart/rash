@@ -3,6 +3,3 @@
 name = "rash"
 version = "0.0.1"
 authors = ["Zac Stewart <zgstewart@gmail.com>"]
-
-[dependencies.rustbox]
-git = "https://github.com/gchp/rustbox.git"

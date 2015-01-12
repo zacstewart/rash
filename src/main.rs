@@ -1,34 +1,38 @@
-extern crate rustbox;
+use std::io::{stdio};
+use std::io::stdio::{StdinReader, StdWriter};
 
-use job::Job;
-use std::io::{Command, stdio, IoError};
-
-mod job;
 mod process;
 
+struct Shell<'s, W: Writer> {
+    stdin: StdinReader,
+    stdout: W
+}
+
+impl<'s, W: Writer> Shell<'s, W> {
+    fn new(stdin: StdinReader, stdout: W) -> Shell<'s, W> {
+        Shell {
+            stdin: stdin,
+            stdout: stdout
+        }
+    }
+
+    fn start(&mut self) {
+        loop {
+            self.stdout.write_str("[rash] $ ");
+            self.stdout.flush();
+
+            let line = self.stdin.read_line().unwrap();
+            let line = line.trim();
+            let mut process = process::Process::new(line, stdio::stdin(), stdio::stdout());
+
+            process.launch();
+        }
+    }
+}
 
 fn main() {
-    let jobs: Vec<Job> = vec!();
-
     let mut stdin = stdio::stdin();
     let mut stdout = stdio::stdout();
-
-    loop {
-        stdout.write_str("[rash] $ ");
-        stdout.flush();
-        let line = stdin.read_line().unwrap();
-        let line = line.trim();
-        let mut argv = line.split_str(" ").collect::<Vec<&str>>();
-        let program = argv.remove(0).unwrap();
-        let mut process = match Command::new(program).args(argv.as_slice()).env("PWD", "/").spawn() {
-            Ok(p) => p,
-            Err(e) => panic!("Failed execution: {}", e)
-        };
-        let output = match process.stdout.as_mut().unwrap().read_to_end() {
-            Ok(o) => o,
-            Err(e) => panic!("Failed to get output: {}", e)
-        };
-        stdout.write(output.as_slice());
-        stdout.flush();
-    }
+    let mut shell = Shell::new(stdin, stdout);
+    shell.start();
 }

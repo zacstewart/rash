@@ -1,6 +1,7 @@
 #![feature(box_syntax)]
 use std::io::{stdio};
 use std::io::stdio::{StdinReader, StdWriter};
+use std::io::MemReader;
 
 mod process;
 
@@ -24,7 +25,8 @@ impl<'s, W: Writer> Shell<'s, W> {
 
             let line = self.stdin.read_line().unwrap();
             let line = line.trim();
-            let mut process = process::Process::new(line, stdio::stdin(), stdio::stdout());
+            let stdin = MemReader::new(vec!());
+            let mut process = process::Process::new(line, stdin, stdio::stdout());
 
             process.launch();
         }

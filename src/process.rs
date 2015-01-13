@@ -1,5 +1,5 @@
-use std::io::process::ProcessExit;
 use std::io::Command;
+use std::io::process::ProcessExit;
 
 #[deriving(Show)]
 pub struct Process<'p, R: Reader, W: Writer> {

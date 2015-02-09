@@ -1,11 +1,21 @@
 use process::Process;
+use pipe::Pipe;
 
-#[deriving(Show)]
 pub struct Job<'j> {
-    pub process: Process<'j>,
-    pub pgid: uint,
-    pub notified: bool,
-    pub stdin: int,
-    pub stdout: int,
-    pub stderr: int
+    processes: Vec<Process<'j>>
+}
+
+impl<'j> Job<'j> {
+    pub fn new(line: &'j str) -> Job<'j> {
+        let processes = line.split_str("|").map(|command|
+            Process::new(command, Pipe::from_stdin(), Pipe::to_stdout())
+        ).collect();
+        Job { processes: processes }
+    }
+
+    pub fn launch(&mut self) {
+        for process in self.processes.iter_mut() {
+            process.launch();
+        }
+    }
 }

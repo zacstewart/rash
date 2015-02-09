@@ -1,20 +1,20 @@
 use std::io::Command;
 use std::io::process::ProcessExit;
+use pipe::Pipe;
 
-#[deriving(Show)]
-pub struct Process<'p, R: Reader, W: Writer> {
+pub struct Process<'p> {
     pub command: &'p str,
     pub arguments: Box<[&'p str]>,
     pub pid: usize,
     pub completed: bool,
     pub stopped: bool,
-    stdin: R,
-    stdout: W
+    stdin: Pipe,
+    stdout: Pipe
 }
 
-impl<'p, R: Reader, W: Writer> Process<'p, R, W> {
-    pub fn new(line: &'p str, reader: R, mut writer: W) -> Process<'p, R, W> {
-        let mut argv = line.split_str(" ").collect::<Vec<&str>>();
+impl<'p> Process<'p> {
+    pub fn new(line: &'p str, reader: Pipe, writer: Pipe) -> Process<'p> {
+        let mut argv = line.trim().split_str(" ").collect::<Vec<&str>>();
         let command = argv.remove(0);
         let arguments = argv.into_boxed_slice();
 
@@ -38,13 +38,28 @@ impl<'p, R: Reader, W: Writer> Process<'p, R, W> {
                 Err(e) => panic!("Failed execution: {}", e)
             };
 
-        let input = self.stdin.read_to_end().unwrap();
-        let input = input.as_slice().clone();
-        process.stdin.as_mut().unwrap().write(input);
+        match self.stdin.read_to_end() {
+            Ok(input) => {
+                let input = input.as_slice().clone();
+                match process.stdin.as_mut() {
+                    Some(stdin) => stdin.write(input),
+                    _ => Ok(())
+                };
+            },
+            Err(e) => {}
+        }
 
-        let output = process.stdout.as_mut().unwrap().read_to_end().unwrap();
-        let output = output.as_slice().clone();
-        self.stdout.write(output);
+        match process.stdout.as_mut() {
+            Some(stdout) => match stdout.read_to_end() {
+                Ok(output) => {
+                    let output = output.as_slice().clone();
+                    self.stdout.write(output);
+                },
+                Err(e) => {}
+            },
+            None => {}
+        }
+
         self.stdout.flush();
 
         match process.wait() {

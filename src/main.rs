@@ -1,41 +1,38 @@
 #![feature(box_syntax)]
 use std::io::{stdio};
-use std::io::stdio::{StdinReader, StdWriter};
-use std::io::MemReader;
+use job::Job;
 
+mod job;
 mod process;
+mod pipe;
 
-struct Shell<'s, W: Writer> {
-    stdin: StdinReader,
-    stdout: W
-}
+struct Shell;
 
-impl<'s, W: Writer> Shell<'s, W> {
-    fn new(stdin: StdinReader, stdout: W) -> Shell<'s, W> {
-        Shell {
-            stdin: stdin,
-            stdout: stdout
-        }
+impl<'s> Shell {
+    fn new() -> Shell {
+        Shell
     }
 
     fn start(&mut self) {
         loop {
-            self.stdout.write_str("[rash] $ ");
-            self.stdout.flush();
+            let mut stdin = stdio::stdin();
+            let mut stdout = stdio::stdout();
+            stdout.write_str("[rash] $ ");
+            stdout.flush();
 
-            let line = self.stdin.read_line().unwrap();
-            let line = line.trim();
-            let stdin = MemReader::new(vec!());
-            let mut process = process::Process::new(line, stdin, stdio::stdout());
-
-            process.launch();
+            match stdin.read_line() {
+                Ok(line) => {
+                    let line = line.as_slice();
+                    let mut job = Job::new(line);
+                    job.launch()
+                },
+                Err(e) => { }
+            }
         }
     }
 }
 
 fn main() {
-    let mut stdin = stdio::stdin();
-    let mut stdout = stdio::stdout();
-    let mut shell = Shell::new(stdin, stdout);
+    let mut shell = Shell::new();
     shell.start();
 }

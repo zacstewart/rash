@@ -17,7 +17,7 @@ impl<'s> Shell {
         loop {
             let mut stdin = stdio::stdin();
             let mut stdout = stdio::stdout();
-            stdout.write_str("[rash] $ ");
+            stdout.write_str("[rush] $ ");
             stdout.flush();
 
             match stdin.read_line() {

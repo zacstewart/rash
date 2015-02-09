@@ -1,10 +1,9 @@
-use std::io::stdio::StdinReader;
-use std::io::util::NullWriter;
-use std::io::{Reader,Writer,ChanReader,ChanWriter,IoResult};
-use std::io::{stdio};
+use std::old_io::stdio::StdinReader;
+use std::old_io::util::NullWriter;
+use std::old_io::{Reader,Writer,ChanReader,ChanWriter,IoResult};
+use std::old_io::{stdio};
 use std::sync::mpsc::channel;
 
-#[deriving(Clone)]
 pub struct Pipe {
     reader: Option<ChanReader>,
     writer: Option<ChanWriter>
@@ -37,10 +36,10 @@ impl Pipe {
 }
 
 impl Writer for Pipe {
-    fn write(&mut self, buf: &[u8]) -> IoResult<()> {
+    fn write_all(&mut self, buf: &[u8]) -> IoResult<()> {
         match self.writer {
-            Some(ref mut w) => w.write(buf),
-            None => stdio::stdout().write(buf)
+            Some(ref mut w) => w.write_all(buf),
+            None => stdio::stdout().write_all(buf)
         }
     }
 }

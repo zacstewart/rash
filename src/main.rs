@@ -1,5 +1,5 @@
 #![feature(box_syntax)]
-use std::io::{stdio};
+use std::old_io::{stdio};
 use job::Job;
 
 mod job;

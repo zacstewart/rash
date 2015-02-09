@@ -1,5 +1,5 @@
-use std::io::Command;
-use std::io::process::ProcessExit;
+use std::old_io::Command;
+use std::old_io::process::ProcessExit;
 use pipe::Pipe;
 
 pub struct Process<'p> {

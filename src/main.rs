@@ -1,5 +1,4 @@
-#![feature(box_syntax)]
-use std::old_io::{stdio};
+use std::io::{self, Write};
 use job::Job;
 
 mod job;
@@ -8,25 +7,27 @@ mod pipe;
 
 struct Shell;
 
-impl<'s> Shell {
+impl Shell {
     fn new() -> Shell {
         Shell
     }
 
     fn start(&mut self) {
         loop {
-            let mut stdin = stdio::stdin();
-            let mut stdout = stdio::stdout();
-            stdout.write_str("[rush] $ ");
-            stdout.flush();
+            let mut stdout = io::stdout();
+            print!("[rush] $ ");
+            stdout.flush().unwrap();
 
-            match stdin.read_line() {
-                Ok(line) => {
-                    let line = line.as_slice();
-                    let mut job = Job::new(line);
-                    job.launch()
+            let mut line = String::new();
+            match io::stdin().read_line(&mut line) {
+                Ok(_) => {
+                    let line = line.trim();
+                    if !line.is_empty() {
+                        let mut job = Job::new(line);
+                        job.launch();
+                    }
                 },
-                Err(e) => { }
+                Err(_) => {},
             }
         }
     }

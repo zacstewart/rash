@@ -1,70 +1,52 @@
-use std::old_io::Command;
-use std::old_io::process::ProcessExit;
-use pipe::Pipe;
+use std::process::{Command, ExitStatus};
+use std::io::{Read, Write};
+use crate::pipe::Pipe;
 
 pub struct Process<'p> {
     pub command: &'p str,
     pub arguments: Box<[&'p str]>,
-    pub pid: usize,
-    pub completed: bool,
-    pub stopped: bool,
     stdin: Pipe,
-    stdout: Pipe
+    stdout: Pipe,
 }
 
 impl<'p> Process<'p> {
     pub fn new(line: &'p str, reader: Pipe, writer: Pipe) -> Process<'p> {
-        let mut argv = line.trim().split_str(" ").collect::<Vec<&str>>();
+        let mut argv = line.trim().split_whitespace().collect::<Vec<&str>>();
         let command = argv.remove(0);
         let arguments = argv.into_boxed_slice();
 
         Process {
-            command: command,
-            arguments: arguments,
-            pid: 0,
-            completed: false,
-            stopped: false,
+            command,
+            arguments,
             stdin: reader,
-            stdout: writer
+            stdout: writer,
         }
     }
 
-    pub fn launch(&mut self) -> ProcessExit {
-        let box ref args = self.arguments;
+    pub fn launch(&mut self) -> ExitStatus {
+        let args: &[&str] = &self.arguments;
         let mut process = match Command::new(self.command)
             .args(args)
             .spawn() {
                 Ok(p) => p,
-                Err(e) => panic!("Failed execution: {}", e)
+                Err(e) => {
+                    eprintln!("Failed to execute command '{}': {}", self.command, e);
+                    std::process::exit(1);
+                }
             };
 
-        match self.stdin.read_to_end() {
-            Ok(input) => {
-                let input = input.as_slice().clone();
-                match process.stdin.as_mut() {
-                    Some(stdin) => stdin.write(input),
-                    _ => Ok(())
-                };
-            },
-            Err(e) => {}
+        let mut input = Vec::new();
+        self.stdin.read_to_end(&mut input).unwrap();
+        if let Some(mut stdin) = process.stdin.take() {
+            stdin.write_all(&input).unwrap();
         }
 
-        match process.stdout.as_mut() {
-            Some(stdout) => match stdout.read_to_end() {
-                Ok(output) => {
-                    let output = output.as_slice().clone();
-                    self.stdout.write(output);
-                },
-                Err(e) => {}
-            },
-            None => {}
+        let mut output = Vec::new();
+        if let Some(mut stdout) = process.stdout.take() {
+            stdout.read_to_end(&mut output).unwrap();
+            self.stdout.write_all(&output).unwrap();
         }
 
-        self.stdout.flush();
-
-        match process.wait() {
-            Ok(status) => return status,
-            Err(error) => panic!("Couldn't wait")
-        }
+        process.wait().unwrap()
     }
 }

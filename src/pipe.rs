@@ -1,54 +1,58 @@
-use std::old_io::stdio::StdinReader;
-use std::old_io::util::NullWriter;
-use std::old_io::{Reader,Writer,ChanReader,ChanWriter,IoResult};
-use std::old_io::{stdio};
-use std::sync::mpsc::channel;
+use std::io::{self, Read, Write};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct Pipe {
-    reader: Option<ChanReader>,
-    writer: Option<ChanWriter>
+    reader: Option<Receiver<u8>>,
+    writer: Option<Sender<u8>>,
 }
 
 impl Pipe {
-    pub fn new() -> Pipe {
-        let (tx, rx) = channel();
-        Pipe {
-            reader: Some(ChanReader::new(rx)),
-            writer: Some(ChanWriter::new(tx))
-        }
-    }
-
     pub fn from_stdin() -> Pipe {
-        let (tx, rx) = channel();
+        let (tx, _) = channel();
         Pipe {
             reader: None,
-            writer: Some(ChanWriter::new(tx))
+            writer: Some(tx),
         }
     }
 
     pub fn to_stdout() -> Pipe {
-        let (tx, rx) = channel();
+        let (_, rx) = channel();
         Pipe {
-            reader: Some(ChanReader::new(rx)),
-            writer: None
+            reader: Some(rx),
+            writer: None,
         }
     }
 }
 
-impl Writer for Pipe {
-    fn write_all(&mut self, buf: &[u8]) -> IoResult<()> {
-        match self.writer {
-            Some(ref mut w) => w.write_all(buf),
-            None => stdio::stdout().write_all(buf)
+impl Write for Pipe {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if let Some(ref mut w) = self.writer {
+            for &byte in buf {
+                w.send(byte).unwrap();
+            }
+            Ok(buf.len())
+        } else {
+            io::stdout().write(buf)
         }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        io::stdout().flush()
     }
 }
 
-impl Reader for Pipe {
-    fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
-        match self.reader {
-            Some(ref mut r) => r.read(buf),
-            None => Ok(0) //stdio::stdin().read(buf)
+impl Read for Pipe {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if let Some(ref mut r) = self.reader {
+            for (i, byte) in buf.iter_mut().enumerate() {
+                match r.recv() {
+                    Ok(b) => *byte = b,
+                    Err(_) => return Ok(i),
+                }
+            }
+            Ok(buf.len())
+        } else {
+            Ok(0)
         }
     }
 }

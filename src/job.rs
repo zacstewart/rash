@@ -1,16 +1,16 @@
-use process::Process;
-use pipe::Pipe;
+use crate::process::Process;
+use crate::pipe::Pipe;
 
 pub struct Job<'j> {
-    processes: Vec<Process<'j>>
+    processes: Vec<Process<'j>>,
 }
 
 impl<'j> Job<'j> {
     pub fn new(line: &'j str) -> Job<'j> {
-        let processes = line.split_str("|").map(|command|
+        let processes = line.split('|').map(|command|
             Process::new(command, Pipe::from_stdin(), Pipe::to_stdout())
         ).collect();
-        Job { processes: processes }
+        Job { processes }
     }
 
     pub fn launch(&mut self) {
